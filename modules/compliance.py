@@ -4,6 +4,7 @@ Validates device configurations against compliance rules
 """
 
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
@@ -117,9 +118,27 @@ class ComplianceChecker:
 
     @staticmethod
     def _check_rule(config_content: str, rule_def: Dict) -> bool:
-        """Check if config satisfies a rule"""
+        """
+        Check if any non-negated line in config satisfies the rule pattern.
+
+        Uses a line-anchored regex search so that:
+          - Commented-out lines (starting with ! or #) are skipped.
+          - Negated Cisco commands (starting with 'no ') are treated as absent.
+          - The pattern text is matched as a literal string (case-insensitive).
+        """
         pattern = rule_def.get("pattern", "")
-        return pattern.lower() in config_content.lower()
+        if not pattern:
+            return False
+
+        escaped = re.escape(pattern)
+        for line in config_content.splitlines():
+            stripped = line.strip()
+            # Skip comments and negated commands
+            if stripped.startswith(("!", "#", "no ")):
+                continue
+            if re.search(escaped, stripped, re.IGNORECASE):
+                return True
+        return False
 
     def add_custom_rule(self, vendor: str, rule_name: str,
                        pattern: str, required: bool = True) -> Tuple[bool, str]:

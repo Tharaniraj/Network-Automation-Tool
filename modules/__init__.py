@@ -11,6 +11,7 @@ from .configuration import ConfigurationManager
 from .status_monitor import StatusMonitor, DeviceStatus
 from .compliance import ComplianceChecker
 from .logger import get_observability_manager
+from .netflow import NetFlowCollector
 
 __all__ = [
     "DeviceManager",
@@ -18,5 +19,6 @@ __all__ = [
     "StatusMonitor",
     "DeviceStatus",
     "ComplianceChecker",
-    "get_observability_manager"
+    "get_observability_manager",
+    "NetFlowCollector",
 ]

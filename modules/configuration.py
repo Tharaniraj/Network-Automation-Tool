@@ -3,12 +3,15 @@ Configuration Management Module
 Handles configuration deployment, backup, and restore
 """
 
+import difflib
 import json
 import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
+
 from .logger import get_observability_manager
+from . import ssh_client
 
 
 class ConfigurationManager:
@@ -39,7 +42,7 @@ class ConfigurationManager:
                             config_type: str = "full") -> Tuple[bool, str]:
         """Backup device configuration"""
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             backup_name = f"{hostname}_{config_type}_{timestamp}.config"
             backup_path = self.backup_dir / backup_name
             
@@ -145,41 +148,71 @@ class ConfigurationManager:
 
     def compare_configurations(self, hostname: str, backup1: str,
                               backup2: str) -> Tuple[bool, str, Dict]:
-        """Compare two configurations and show differences"""
+        """Compare two configurations using unified diff."""
         try:
             path1 = self.backup_dir / backup1
             path2 = self.backup_dir / backup2
-            
+
             if not path1.exists() or not path2.exists():
                 return False, "One or both backups not found", {}
-            
-            with open(path1, 'r') as f:
+
+            with open(path1, "r", encoding="utf-8") as f:
                 config1 = f.readlines()
-            with open(path2, 'r') as f:
+            with open(path2, "r", encoding="utf-8") as f:
                 config2 = f.readlines()
-            
-            added_lines = [line for line in config2 if line not in config1]
-            removed_lines = [line for line in config1 if line not in config2]
-            
+
+            diff_lines = list(
+                difflib.unified_diff(
+                    config1, config2,
+                    fromfile=backup1,
+                    tofile=backup2,
+                    lineterm="",
+                )
+            )
+
+            added = [l[1:] for l in diff_lines if l.startswith("+") and not l.startswith("+++")]
+            removed = [l[1:] for l in diff_lines if l.startswith("-") and not l.startswith("---")]
+
             differences = {
-                "added": added_lines,
-                "removed": removed_lines,
-                "timestamp": datetime.now().isoformat()
+                "unified_diff": diff_lines,
+                "added": added,
+                "removed": removed,
+                "timestamp": datetime.now().isoformat(),
             }
-            
+
             self.logger.log_event(
                 event_type="config_compare",
                 device_name=hostname,
-                description=f"Configuration comparison performed",
+                description="Configuration comparison performed",
                 status="success",
-                details={"added_lines": len(added_lines), "removed_lines": len(removed_lines)}
+                details={"added_lines": len(added), "removed_lines": len(removed)},
             )
-            
+
             return True, "Comparison completed", differences
-        
-        except Exception as e:
-            self.logger.log_error(hostname, str(e), "compare_error")
-            return False, f"Comparison failed: {str(e)}", {}
+
+        except Exception as exc:
+            self.logger.log_error(hostname, str(exc), "compare_error")
+            return False, f"Comparison failed: {exc}", {}
+
+    def fetch_live_config(self, device: dict) -> Tuple[bool, str]:
+        """
+        Retrieve the running configuration directly from the device via SSH.
+        The returned config string can be passed to backup_configuration().
+
+        Returns (success, config_text_or_error_message).
+        """
+        hostname = device.get("hostname", device.get("ip_address", "unknown"))
+        success, result = ssh_client.get_running_config(device)
+        if success:
+            self.logger.log_event(
+                event_type="config_fetched",
+                device_name=hostname,
+                description="Running config retrieved via SSH",
+                status="success",
+            )
+        else:
+            self.logger.log_error(hostname, result, "fetch_config_error")
+        return success, result
 
     def get_device_backups(self, hostname: str) -> List[Dict]:
         """Get all backups for a device"""

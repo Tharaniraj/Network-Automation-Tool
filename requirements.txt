@@ -1,21 +1,28 @@
-# Network Device Manager Requirements
-# Python 3.8+ (built-in only, no external dependencies)
+# Network Device Manager — Python 3.8+
+# Install with: pip install -r requirements.txt
 
-# Standard Library (included with Python)
-tkinter
-json
-logging
-socket
-pathlib
-datetime
-threading
-enum
-typing
+# ── Core (required) ───────────────────────────────────────────────────────────
+# Credential encryption at rest
+cryptography>=3.4
 
-# Optional (for enhanced features)
-# cryptography>=3.4 (for password encryption)
-# paramiko>=2.7 (for SSH connections)
-# netmiko>=4.0 (for network device management)
+# ── Network connectivity (required for real SSH operations) ───────────────────
+# SSH session management for Cisco IOS/IOS-XE and Huawei VRP
+netmiko>=4.0
 
-# Note: This application uses only Python standard library to minimize dependencies
-# All functionality is available without external packages
+# ── Testing ───────────────────────────────────────────────────────────────────
+# Run: python -m pytest tests/ -v  (or: python -m unittest discover -s tests -v)
+pytest>=7.0        ; extra == "dev"
+
+# ── Standard-library modules (no install needed — listed for documentation) ───
+# tkinter   — GUI
+# json      — data persistence
+# logging   — application logs
+# socket    — TCP connectivity checks
+# pathlib   — file system operations
+# datetime  — timestamps
+# threading — async/background operations
+# ipaddress — CIDR/range parsing
+# difflib   — configuration comparison
+# re        — compliance rule matching
+# enum      — device status states
+# typing    — type hints
