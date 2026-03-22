@@ -5,6 +5,9 @@
 # Credential encryption at rest
 cryptography>=3.4
 
+# GUI icons — dashboard card images
+Pillow>=9.0
+
 # ── Network connectivity (required for real SSH operations) ───────────────────
 # SSH session management for Cisco IOS/IOS-XE and Huawei VRP
 netmiko>=4.0

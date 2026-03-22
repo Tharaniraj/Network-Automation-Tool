@@ -75,6 +75,140 @@ def make_3d_button(parent, text, command=None, btn_type="primary",
     return btn
 
 
+def _make_dash_icon(color: str, shape: str, size: int = 52):
+    """
+    Draw a circular dashboard icon using Pillow and return an
+    ImageTk.PhotoImage.  Falls back to None when Pillow is absent.
+
+    Shapes: devices | check | cross | cisco | huawei |
+            health  | alert | shield
+    """
+    try:
+        import math
+        from PIL import Image, ImageDraw, ImageTk
+    except ImportError:
+        return None
+
+    # Render at 2× then downsample for smooth anti-aliasing
+    S = size * 2
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    def _hex(h, a=255):
+        h = h.lstrip("#")
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), a)
+
+    bg = _hex(color)
+    # Filled circle
+    d.ellipse([2, 2, S - 2, S - 2], fill=bg)
+    # Soft top-highlight for subtle 3-D sphere look
+    lighter = (min(255, bg[0] + 50), min(255, bg[1] + 50),
+               min(255, bg[2] + 50), 70)
+    d.ellipse([6, 6, S - 6, S // 2], fill=lighter)
+
+    W = (255, 255, 255, 230)   # white symbol
+    m = S // 2                  # centre
+    lw = max(S // 13, 4)        # line width
+
+    if shape == "devices":
+        # Network device: rounded rectangle body + 4 port dots + antenna
+        bx, by = S // 5, S // 3
+        bw, bh = S * 3 // 5, S // 3
+        d.rounded_rectangle([bx, by, bx + bw, by + bh],
+                             radius=S // 16, outline=W, width=lw)
+        pstep = bw // 5
+        for i in range(4):
+            px = bx + pstep * (i + 1) - pstep // 2
+            py = by + bh // 2
+            r = lw - 1
+            d.ellipse([px - r, py - r, px + r, py + r], fill=W)
+        # Antenna
+        d.line([m, by, m, by - S // 9], fill=W, width=lw)
+        d.ellipse([m - lw, by - S // 9 - lw,
+                   m + lw, by - S // 9 + lw], fill=W)
+
+    elif shape == "check":
+        d.line([m - S // 4, m,
+                m - S // 13, m + S // 5,
+                m + S // 4, m - S // 7],
+               fill=W, width=lw + 2, joint="curve")
+
+    elif shape == "cross":
+        pad = S // 5
+        d.line([pad, pad, S - pad, S - pad], fill=W, width=lw + 2)
+        d.line([S - pad, pad, pad, S - pad], fill=W, width=lw + 2)
+
+    elif shape == "cisco":
+        # Three signal arcs (Cisco-style wireless / network icon) + dot
+        for r in [S // 7, S // 4 + 2, S // 3 + 2]:
+            d.arc([m - r, m - r, m + r, m + r],
+                  start=215, end=325, fill=W, width=max(lw - 1, 3))
+        dot = lw - 1
+        d.ellipse([m - dot, m + S // 5,
+                   m + dot, m + S // 5 + dot * 2], fill=W)
+
+    elif shape == "huawei":
+        # 8 radiating petals (simplified Huawei flower logo)
+        for i in range(8):
+            angle = i * math.pi / 4
+            x1 = m + (S // 7) * math.cos(angle)
+            y1 = m + (S // 7) * math.sin(angle)
+            x2 = m + (S // 3 + 2) * math.cos(angle)
+            y2 = m + (S // 3 + 2) * math.sin(angle)
+            d.line([x1, y1, x2, y2], fill=W, width=lw)
+        dot = lw // 2 + 1
+        d.ellipse([m - dot, m - dot, m + dot, m + dot], fill=W)
+
+    elif shape == "health":
+        # ECG heartbeat line
+        x0 = S // 8
+        pts = [
+            x0,             m,
+            x0 + S // 5,    m,
+            x0 + S // 5 + S // 10, m - S // 4,
+            x0 + S // 5 + S // 5,  m + S // 4,
+            x0 + S // 5 + S // 10 * 3, m - S // 9,
+            x0 + S * 2 // 5 + S // 8, m,
+            S - x0,         m,
+        ]
+        d.line(pts, fill=W, width=lw, joint="curve")
+
+    elif shape == "alert":
+        # Bell: arc top + straight sides + base bar + clapper
+        pad = S // 5
+        # Arc (bell dome)
+        d.arc([pad, pad + S // 10, S - pad, S * 3 // 4],
+              start=180, end=0, fill=W, width=lw)
+        # Sides
+        d.line([pad, m + S // 10, pad, S * 3 // 4],   fill=W, width=lw)
+        d.line([S - pad, m + S // 10, S - pad, S * 3 // 4], fill=W, width=lw)
+        # Base bar
+        d.line([pad - lw // 2, S * 3 // 4,
+                S - pad + lw // 2, S * 3 // 4], fill=W, width=lw)
+        # Clapper
+        cr = lw - 1
+        d.ellipse([m - cr, S * 3 // 4 + 2,
+                   m + cr, S * 3 // 4 + cr * 2 + 4], fill=W)
+
+    elif shape == "shield":
+        # Pentagon shield outline + checkmark
+        pts = [(m,       S // 8),
+               (S * 7 // 8, S // 3),
+               (S * 3 // 4, S * 3 // 4),
+               (m,       S * 7 // 8),
+               (S // 4,  S * 3 // 4),
+               (S // 8,  S // 3)]
+        d.polygon(pts, outline=W, fill=None, width=lw)
+        # Checkmark inside shield
+        d.line([m - S // 7, m + S // 14,
+                m - S // 18, m + S // 4,
+                m + S // 5, m - S // 10],
+               fill=W, width=lw)
+
+    img = img.resize((size, size), Image.LANCZOS)
+    return ImageTk.PhotoImage(img)
+
+
 class NetworkDeviceManagerGUI:
     """Main GUI Application for Network Device Management"""
 
@@ -277,18 +411,21 @@ class NetworkDeviceManagerGUI:
         stats_outer.pack(fill=tk.BOTH, expand=True, padx=10, pady=4)
 
         card_configs = [
-            ("Total Devices",    "total_devices",    "#58a6ff", "⬢"),
-            ("Online",           "online_devices",   "#3fb950", "●"),
-            ("Offline",          "offline_devices",  "#f85149", "●"),
-            ("Cisco",            "cisco_devices",    "#79c0ff", "⬡"),
-            ("Huawei",           "huawei_devices",   "#e3b341", "⬡"),
-            ("Avg Health",       "avg_health",       "#39d353", "♥"),
-            ("Active Alerts",    "active_alerts",    "#f78166", "⚑"),
-            ("Compliance Score", "compliance_score", "#bc8cff", "✦"),
+            ("Total Devices",    "total_devices",    "#58a6ff", "devices"),
+            ("Online",           "online_devices",   "#3fb950", "check"),
+            ("Offline",          "offline_devices",  "#f85149", "cross"),
+            ("Cisco",            "cisco_devices",    "#79c0ff", "cisco"),
+            ("Huawei",           "huawei_devices",   "#e3b341", "huawei"),
+            ("Avg Health",       "avg_health",       "#39d353", "health"),
+            ("Active Alerts",    "active_alerts",    "#f78166", "alert"),
+            ("Compliance Score", "compliance_score", "#bc8cff", "shield"),
         ]
 
+        # Keep PhotoImage refs alive (GC would blank them otherwise)
+        self._dash_icon_refs = []
+
         self.stats_labels = {}
-        for idx, (label, key, color, icon) in enumerate(card_configs):
+        for idx, (label, key, color, shape) in enumerate(card_configs):
             row, col = divmod(idx, 4)
             stats_outer.grid_columnconfigure(col, weight=1)
 
@@ -296,8 +433,18 @@ class NetworkDeviceManagerGUI:
                             highlightbackground=color, highlightthickness=1)
             card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
 
-            tk.Label(card, text=icon, font=("Arial", 22),
-                     fg=color, bg=BG_LIGHT).pack(pady=(10, 0))
+            # PIL icon (falls back to Unicode glyph if Pillow not present)
+            img = _make_dash_icon(color, shape, size=52)
+            if img:
+                self._dash_icon_refs.append(img)
+                tk.Label(card, image=img, bg=BG_LIGHT).pack(pady=(10, 0))
+            else:
+                _fallback = {"devices": "⬢", "check": "●", "cross": "●",
+                             "cisco": "⬡", "huawei": "⬡", "health": "♥",
+                             "alert": "⚑", "shield": "✦"}
+                tk.Label(card, text=_fallback.get(shape, "?"),
+                         font=("Arial", 22), fg=color, bg=BG_LIGHT).pack(pady=(10, 0))
+
             tk.Label(card, text=label, font=("Arial", 9),
                      fg=TEXT_SEC, bg=BG_LIGHT).pack()
             value_var = tk.StringVar(value="—")
