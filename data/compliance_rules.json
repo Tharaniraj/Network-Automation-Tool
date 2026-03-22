@@ -1,0 +1,71 @@
+{
+  "cisco": {
+    "ssh_enabled": {
+      "pattern": "ip ssh version 2",
+      "required": true,
+      "description": "SSH version 2 must be enabled for secure remote access"
+    },
+    "dns_configured": {
+      "pattern": "ip name-server",
+      "required": true,
+      "description": "DNS servers must be configured"
+    },
+    "logging_enabled": {
+      "pattern": "logging",
+      "required": true,
+      "description": "Logging must be enabled for audit trail"
+    },
+    "ntp_configured": {
+      "pattern": "ntp server",
+      "required": true,
+      "description": "NTP server must be configured for time synchronization"
+    },
+    "snmp_configured": {
+      "pattern": "snmp-server",
+      "required": true,
+      "description": "SNMP must be configured for monitoring"
+    },
+    "acl_configured": {
+      "pattern": "access-list",
+      "required": false,
+      "description": "Access control lists recommended for security"
+    },
+    "banner_set": {
+      "pattern": "banner",
+      "required": false,
+      "description": "Login banner recommended for legal compliance"
+    }
+  },
+  "huawei": {
+    "ssh_enabled": {
+      "pattern": "stelnet server enable",
+      "required": true,
+      "description": "SSH (Stelnet) server must be enabled"
+    },
+    "dns_configured": {
+      "pattern": "dns server",
+      "required": true,
+      "description": "DNS servers must be configured"
+    },
+    "logging_enabled": {
+      "pattern": "logging",
+      "required": true,
+      "description": "Logging must be enabled"
+    },
+    "ntp_configured": {
+      "pattern": "ntp-server",
+      "required": true,
+      "description": "NTP server must be configured"
+    },
+    "snmp_configured": {
+      "pattern": "snmp-agent",
+      "required": true,
+      "description": "SNMP agent must be configured"
+    },
+    "vty_set": {
+      "pattern": "line vty",
+      "required": false,
+      "description": "VTY line configuration recommended"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# Network Device Manager Requirements
+# Python 3.8+ (built-in only, no external dependencies)
+
+# Standard Library (included with Python)
+tkinter
+json
+logging
+socket
+pathlib
+datetime
+threading
+enum
+typing
+
+# Optional (for enhanced features)
+# cryptography>=3.4 (for password encryption)
+# paramiko>=2.7 (for SSH connections)
+# netmiko>=4.0 (for network device management)
+
+# Note: This application uses only Python standard library to minimize dependencies
+# All functionality is available without external packages

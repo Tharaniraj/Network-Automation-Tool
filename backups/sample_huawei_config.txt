@@ -1,0 +1,76 @@
+#
+# Huawei Switch Configuration Sample
+# Device: Production Switch 01
+# Generated: 2025-03-22
+#
+
+sysName prod-switch-01
+#
+# DNS Configuration
+dns server 8.8.8.8
+dns server 8.8.4.4
+#
+# NTP Configuration
+ntp-server 10.0.0.1
+ntp-server 10.0.0.2
+#
+# SSH/Stelnet Configuration
+stelnet server enable
+ssh server enable
+#
+# SNMP Configuration
+snmp-agent community read public
+snmp-agent community write private
+snmp-agent sys-info contact admin@company.com
+snmp-agent sys-info location "Production - Floor 2"
+#
+# Logging Configuration
+logging server 10.0.0.50
+info-center loghost 10.0.0.50
+#
+# VLAN Configuration
+vlan batch 1 2 10 20 30
+#
+vlan 10
+ name Management
+#
+vlan 20
+ name Data
+#
+vlan 30
+ name Voice
+#
+# Interface Configuration
+interface Ethernet 1/0/1
+ port link-type access
+ port default vlan 20
+ description "Access Port 1"
+#
+interface Ethernet 1/0/2
+ port link-type access
+ port default vlan 30
+ description "Access Port 2"
+#
+# Trunk Port
+interface Ethernet 1/0/49
+ port link-type trunk
+ port trunk allow-pass vlan 1 10 20 30
+ description "Uplink Port"
+#
+# Management Interface
+interface Vlanif 10
+ ip address 192.168.100.1 255.255.255.0
+#
+# Banner
+header login information "Welcome to Production Switch 01"
+#
+user-interface vty 0 4
+ authentication-mode password
+ set authentication password cipher default123456
+ terminal databits 8
+#
+line vty 0 4
+ exec timeout 5 0
+ history-size 10
+#
+end
